@@ -29,8 +29,11 @@ int main() {
   //
   // Problem: It is not clear how to pass the formatting data along in a way that libfmt does not produce a runtime error
   
-  fmt::print("{:.6}\n", x); // Try to use echo() default precision  (runtime error)
-  fmt::print("{:.6}\n", y);
+  // echo() default precision is `{:.6g}`
+  fmt::print("{:.6}\n", n1); // Try on Numeric (runtime error)
+  //fmt::print("{:.6}\n", x);  // Try on Value of Numeric (runtime error)
+  fmt::print("{:.6}\n", x);  // Try on Value of Numeric (runtime error)
+  fmt::print("{:.6}\n", y);  // Try on Value of VectorType of Numerics (runtime error)
 
   // dynamic precision ???
   //fmt::print("{:.{}g}\n", x, 4);

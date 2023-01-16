@@ -117,9 +117,18 @@ template <> struct fmt::formatter<Numeric> : fmt::formatter<double> {
 template <> struct fmt::formatter<VectorType> : fmt::formatter<Value> {
   template <typename FormatContext>
   auto format(const VectorType& v, FormatContext& ctx) const -> decltype(ctx.out()) {
+
     // use ranges format spec (double colon), while inserting previously parsed spec
-    return fmt::format_to(ctx.out(), "{::{}}", v.vec, this->fmt_sv());
-    //return fmt::format_to(ctx.out(), fmt::format("[{}]", this->fmt_sv()), fmt::join(v.vec, ", "));
+    //   One major pain point is that in order to put literal brace characters `{` and `}`
+    //   in format output, documentation says to double them: "{{" and "}}",
+    //   but this seems to always break parsing of the format.
+    //return fmt::format_to(ctx.out(), fmt::format("{{::{}}}", this->fmt_sv()), v.vec);
+
+    // "dynamic formatting" doesn't seem to work here
+    //return fmt::format_to(ctx.out(), "{::{}}", v.vec, this->fmt_sv());
+
+    // only method that seems to work so far:
+    return fmt::format_to(ctx.out(), fmt::format("[{}]", this->fmt_sv()), fmt::join(v.vec, ", "));
   }
 };
 
