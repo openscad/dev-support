@@ -42,10 +42,13 @@ int main() {
 
   // "Dynamic precision" workaround
   int prec = 9;
-  fmt::print(fmt::format("{{:.{}g}}\n", prec), x); // Not sure how to avoid runtime error here
+  fmt::print(fmt::format("{{:.{}g}}\n", prec), x);
 
   // https://fmt.dev/latest/syntax.html#format-examples  scroll down to "Dynamic precision:"
-  fmt::print("{:.{}g}\n", x, prec); // Not sure how to avoid runtime error here
+  //fmt::print("{:.{}g}\n", prec, x); // error
+  // attempt to use indexed identifiers?
+  //fmt::print("{1:.{0}g}\n", prec, x); // error
+  //fmt::print("{0:.{1}g}\n", x, prec); // error
 
   return 0;
 }
