@@ -87,19 +87,9 @@ template <> struct fmt::formatter<Value> {
 };
 
 
-// Numeric, testing two different implementations
-#if 0 // use inherited parse and fmt_sv from formatter<Value>
-template <> struct fmt::formatter<Numeric> : fmt::formatter<Value> {
-  template <typename FormatContext>
-  auto format(const Numeric& n, FormatContext& ctx) const -> decltype(ctx.out()) {
-    return std::isnan(n.value) ?
-      // avoid output of "-nan"
-      fmt::format_to(ctx.out(), "nan") :
-      // otherwise pass fmt_sv along to builtin fmt::formatter<double>
-      fmt::format_to(ctx.out(), this->fmt_sv(), n.value);
-  }
-};
-#else // otherwise use parse inherited from builtin formatter<double>
+
+
+// inherit parse from builtin formatter<double>
 template <> struct fmt::formatter<Numeric> : fmt::formatter<double> {
 
   // parse function inherited from formatter<double>
@@ -112,34 +102,9 @@ template <> struct fmt::formatter<Numeric> : fmt::formatter<double> {
       formatter<double>::format(n.value, ctx);
   }
 };
-#endif // Numeric alternate defintions
 
 
 
-
-
-// VectorType, testing two different implementations
-#if 1 // Use parse and fmt_sv function inherited from formatter<Value>
-
-template <> struct fmt::formatter<VectorType> : fmt::formatter<Value> {
-
-  template <typename FormatContext>
-  auto format(const VectorType& v, FormatContext& ctx) const -> decltype(ctx.out()) {
-    // use ranges format spec (double colon), while inserting previously parsed spec
-    //   One major pain point is that in order to put literal brace characters `{` and `}`
-    //   in format output, documentation says to double them: "{{" and "}}",
-    //   but this seems to always break parsing of the format.
-    //return fmt::format_to(ctx.out(), fmt::format("{{::{}}}", this->fmt_sv()), v.vec);
-
-    // "dynamic formatting" doesn't seem to work here
-    //return fmt::format_to(ctx.out(), "{::{}}", v.vec, this->fmt_sv());
-
-    // only method that seems to work so far:
-    return fmt::format_to(ctx.out(), fmt::format("[{}]", this->fmt_sv()), fmt::join(v.vec, ", "));
-  }
-};
-
-#else // Otherwise use custom parser (more runtime errors)
 
 template <> struct fmt::formatter<VectorType> {
 
@@ -162,12 +127,9 @@ template <> struct fmt::formatter<VectorType> {
     fmt_str[length++] = '{';
     fmt_str[length++] = ':';
     fmt_str[length++] = ':';
-    fmt_str[length++] = '{';
-    fmt_str[length++] = ':';
     while (it != end && *it != '}' && length < buflen) {
       fmt_str[length++] = *(it++);
     }
-    fmt_str[length++] = '}';
     fmt_str[length++] = '}';
     return it;
   }
@@ -179,7 +141,7 @@ template <> struct fmt::formatter<VectorType> {
 
 };
 
-#endif // VectorType alternate defintions
+
 
 
 // StringType
