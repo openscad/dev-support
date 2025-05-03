@@ -89,4 +89,32 @@ CGAL::set_error_handler([](const char *type,
     std::cerr << "OFF_to_nef_3: " << unhandled_facets << " unhandled facets." << std::endl;
   }
 
+  std::cout << "== Fifth attempt: Build nef manually == " << std::endl;
+  const auto& mesh = touching_cubes_mesh;
+  CGAL::Nef_nary_union_3<CGAL_Nef_polyhedron3> nary_union;
+  int discarded_facets = 0;
+  for (const auto face : mesh.faces()) {
+    std::vector<CGAL::Point_3<CGAL_Kernel3>> vertices;
+    for (auto vd : CGAL::vertices_around_face(mesh.halfedge(face), mesh)) {
+      vertices.push_back(mesh.point(vd));
+    }    
+
+    bool is_nef = false;
+    if (vertices.size() >= 1) {
+      CGAL_Nef_polyhedron3 nef(vertices.begin(), vertices.end());
+      if (!nef.is_empty()) {
+        nary_union.add_polyhedron(nef);
+        is_nef = true;
+      }
+    }
+    if (!is_nef) {
+      discarded_facets++;
+    }
+ }
+ if (discarded_facets > 0) {
+   std::cerr << "Discarded " << discarded_facets << " facets." << std::endl;
+ }
+ CGAL_Nef_polyhedron3 nef_union = nary_union.get_union();
+
+ std::cout << "== Fifth attempt: OK ==\n";
 }
