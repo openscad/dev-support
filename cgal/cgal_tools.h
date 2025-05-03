@@ -6,6 +6,10 @@ using CGAL_Nef_polyhedron3 = CGAL::Nef_polyhedron_3<CGAL_Kernel3>;
 using CGAL_Vertex = CGAL::Point_3<CGAL_Kernel3>;
 using DoubleVertex = std::array<double, 3>;
 
+
+using Double_Kernel = CGAL::Simple_cartesian<double>;
+using Double_Point3 = CGAL::Point_3<Double_Kernel>;
+
 struct Object {
   std::vector<DoubleVertex> vertices;
   std::vector<std::array<uint32_t, 3>> indices;
