@@ -87,25 +87,66 @@ bool decompose(CGAL_Nef_polyhedron3 &nef, std::vector<std::vector<CGAL::Point_3<
 }
 
 int main(int argc, char *argv[]) {
+  {
+    std::cout << "== Fifth attempt: Build nef manually == " << std::endl;
+    SurfaceMesh touching_cubes_mesh = createSurfaceMesh(touching_cubes);
+    const auto& mesh = touching_cubes_mesh;
+    CGAL::Nef_nary_union_3<CGAL_Nef_polyhedron3> nary_union;
+    int discarded_facets = 0;
+    for (const auto face : mesh.faces()) {
+      std::vector<CGAL::Point_3<CGAL_Kernel3>> vertices;
+      for (auto vd : CGAL::vertices_around_face(mesh.halfedge(face), mesh)) {
+        vertices.push_back(mesh.point(vd));
+      }    
+  
+      bool is_nef = false;
+      if (vertices.size() >= 1) {
+        CGAL_Nef_polyhedron3 nef(vertices.begin(), vertices.end());
+        if (!nef.is_empty()) {
+          nary_union.add_polyhedron(nef);
+          is_nef = true;
+        }
+      }
+      if (!is_nef) {
+        discarded_facets++;
+      }
+   }
+   if (discarded_facets > 0) {
+     std::cerr << "Discarded " << discarded_facets << " facets." << std::endl;
+   }
+   CGAL_Nef_polyhedron3 nef_union = nary_union.get_union();
+   CGAL::Mark_bounded_volumes<CGAL_Nef_polyhedron3> mbv(true);
+   nef_union.delegate(mbv);
 
-  std::cout << "== Second attempt: Build Nef from two cubes == " << std::endl;
-  SurfaceMesh first_cube_mesh = createSurfaceMesh(first_cube);
-  SurfaceMesh second_cube_mesh = createSurfaceMesh(second_cube);
-  writeMesh(first_cube_mesh, "first_cube.off");
-  writeMesh(second_cube_mesh, "second_cube.off");
-  CGAL_Nef_polyhedron3 first_cube_nef(first_cube_mesh);
-  CGAL_Nef_polyhedron3 second_cube_nef(second_cube_mesh);
+   std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
+   bool decompose_ok = decompose(nef_union, parts);
+   if (!decompose_ok) {
+     std::cerr << "Decomposition failed." << std::endl;
+     return 1;
+   }
 
-  CGAL_Nef_polyhedron3 sum_nef;
-  sum_nef += first_cube_nef;
-  sum_nef += second_cube_nef;
-  writeNef(sum_nef, "sum_nef.nef3");
-  std::cout << "== Second attempt: OK == " << std::endl;
+   std::cout << "== Fifth attempt: OK ==\n";
+  }
+  {
+    std::cout << "== Second attempt: Build Nef from two cubes == " << std::endl;
+    SurfaceMesh first_cube_mesh = createSurfaceMesh(first_cube);
+    SurfaceMesh second_cube_mesh = createSurfaceMesh(second_cube);
+    writeMesh(first_cube_mesh, "first_cube.off");
+    writeMesh(second_cube_mesh, "second_cube.off");
+    CGAL_Nef_polyhedron3 first_cube_nef(first_cube_mesh);
+    CGAL_Nef_polyhedron3 second_cube_nef(second_cube_mesh);
 
-  std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
-  bool decompose_ok = decompose(sum_nef, parts);
-  if (!decompose_ok) {
-    std::cerr << "Decomposition failed." << std::endl;
-    return 1;
+    CGAL_Nef_polyhedron3 sum_nef;
+    sum_nef += first_cube_nef;
+    sum_nef += second_cube_nef;
+    writeNef(sum_nef, "sum_nef.nef3");
+
+    std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
+    bool decompose_ok = decompose(sum_nef, parts);
+    if (!decompose_ok) {
+      std::cerr << "Decomposition failed." << std::endl;
+      return 1;
+    }
+    std::cout << "== Second attempt: OK == " << std::endl;
   }
 }
