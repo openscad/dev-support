@@ -25,3 +25,9 @@ target_link_libraries(construct_nef3 PRIVATE CGAL::CGAL)
 
 add_executable(cgal-issue7271 cgal-issue7271.cpp)
 target_link_libraries(cgal-issue7271 PRIVATE CGAL::CGAL)
+
+add_executable(off_to_nef off_to_nef.cpp)
+target_link_libraries(off_to_nef PRIVATE CGAL::CGAL)
+
+add_executable(surface_mesh_to_nef surface_mesh_to_nef.cpp)
+target_link_libraries(surface_mesh_to_nef PRIVATE CGAL::CGAL)
