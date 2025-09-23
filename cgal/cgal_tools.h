@@ -1,5 +1,7 @@
 #pragma once
 
+#include <CGAL/boost/graph/convert_nef_polyhedron_to_polygon_mesh.h>
+
 using NT3 = CGAL::Gmpq;
 using CGAL_Kernel3 = CGAL::Cartesian<NT3>;
 using CGAL_Nef_polyhedron3 = CGAL::Nef_polyhedron_3<CGAL_Kernel3>;
@@ -29,6 +31,12 @@ SurfaceMesh createSurfaceMesh(const Object& obj) {
                   SurfaceMesh::Vertex_index(f[2]));
   }
   return mesh;
+}
+
+void convertNefToSurfaceMesh(const CGAL_Nef_polyhedron3& nef, SurfaceMesh& mesh)
+{
+  constexpr bool triangulate = false;
+  CGAL::convert_nef_polyhedron_to_polygon_mesh(nef, mesh, triangulate);
 }
 
 void writeMesh(const SurfaceMesh& mesh, const std::string& filename) {
