@@ -9,187 +9,76 @@ Try to convert to a Nef Polyhedron.
 #include <fstream>
 #include <vector>
 
-
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
-#include <CGAL/Nef_polyhedron_3.h>
-#include <CGAL/Surface_mesh/Surface_mesh.h>
-#include <CGAL/convex_decomposition_3.h>
 #include <CGAL/IO/Nef_polyhedron_iostream_3.h>
+#include <CGAL/Nef_polyhedron_3.h>
+#include <CGAL/OFF_to_nef_3.h>
+#include <CGAL/Surface_mesh/Surface_mesh.h>
 #include <CGAL/boost/graph/IO/OFF.h>
 #include <CGAL/boost/graph/convert_nef_polyhedron_to_polygon_mesh.h>
-#include <CGAL/OFF_to_nef_3.h>
 
 #include "cgal_tools.h"
-#include "objects.h"
+#include "convert.h"
 
-template <typename Output_kernel>
-bool decompose(CGAL_Nef_polyhedron3 &nef, std::vector<std::vector<CGAL::Point_3<Output_kernel>>> &out)
-{
-  CGAL::convex_decomposition_3(nef);
-  printStats(nef, "decomposed sum_nef");
+void processUnionAllFaces() {
+  auto nef = convertUnionAllFaces();
 
-  int num_parts = 0;
-  int num_unmarked = 0;
-  auto ci = nef.volumes_begin();
-  for (; ci != nef.volumes_end(); ++ci) {
-    if (ci->mark()) {
-      // Two ways of extracting points:
-      // 1. The usual Nef -> Polyhedron_3 -> points
-      // 2. Direct Nef -> points using a shell explorer visitor
+  SurfaceMesh out_mesh;
+  convertNefToSurfaceMesh(nef, out_mesh);
+  writeMesh(out_mesh, "first.off");
 
-      CGAL::Polyhedron_3<CGAL_Kernel3> P;
-      nef.convert_inner_shell_to_polyhedron(ci->shells_begin(), P);
-
-      CGAL::Cartesian_converter<CGAL_Kernel3, Double_Kernel> conv;
-      std::vector<Double_Point3> out;
-      out.reserve(P.size_of_vertices());
-      for (auto pi = P.vertices_begin(); pi != P.vertices_end(); ++pi) {
-        out.push_back(conv(pi->point()));
-      }
-      std::cout << "Part " << num_parts << ": " << out.size() << " vertices" << std::endl;
-
-
-      std::vector<Double_Point3> out2;
-      class Add_vertices {
-
-        std::vector<Double_Point3> &out_;
-        CGAL::Cartesian_converter<CGAL_Kernel3, Double_Kernel> conv_;
-
-      public:
-        Add_vertices(std::vector<Double_Point3> &out)
-          : out_(out) {}
-  
-        void visit(CGAL_Nef_polyhedron3::Vertex_const_handle v) {
-          out_.push_back(conv_(v->point()));
-        }
-  
-        void visit(CGAL_Nef_polyhedron3::Halffacet_const_handle) {}
-        void visit(CGAL_Nef_polyhedron3::SFace_const_handle) {}
-        void visit(CGAL_Nef_polyhedron3::Halfedge_const_handle) {}
-        void visit(CGAL_Nef_polyhedron3::SHalfedge_const_handle) {}
-        void visit(CGAL_Nef_polyhedron3::SHalfloop_const_handle) {}
-      };
-  
-      Add_vertices A(out2);
-      nef.visit_shell_objects(ci->shells_begin(), A);
-      std::cout << "Part " << num_parts << ": " << out2.size() << " vertices" << std::endl;
-
-      num_parts++;
-    }
-    else {
-      num_unmarked++;
-    }
+  std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
+  bool decompose_ok = decompose(nef, parts);
+  if (!decompose_ok) {
+    std::cerr << "Decomposition failed." << std::endl;
   }
+}
+void processUnionTwoNefCubes() {
+  auto nef = convertUnionTwoNefCubes();
 
-  std::cout << "Number of parts: " << num_parts << std::endl;
-  std::cout << "Number of unmarked parts: " << num_unmarked << std::endl;
-  return true;
+  SurfaceMesh out_mesh;
+  convertNefToSurfaceMesh(nef, out_mesh);
+  writeMesh(out_mesh, "second.off");
+
+  std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
+  bool decompose_ok = decompose(nef, parts);
+  if (!decompose_ok) {
+    std::cerr << "Decomposition failed." << std::endl;
+  }
+}
+
+void processMeshWithTwoCubesDistinctVertices() {
+  auto nef = convertMeshWithTwoCubesDistinctVertices();
+
+  SurfaceMesh out_mesh;
+  convertNefToSurfaceMesh(nef, out_mesh);
+  writeMesh(out_mesh, "third.off");
+
+  std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
+  bool decompose_ok = decompose(nef, parts);
+  if (!decompose_ok) {
+    std::cerr << "Decomposition failed." << std::endl;
+  }
+}
+
+void processMeshWithTwoCubesMergedVertices() {
+  auto nef = convertMeshWithTwoCubesMergedVertices();
+
+  SurfaceMesh out_mesh;
+  convertNefToSurfaceMesh(nef, out_mesh);
+  writeMesh(out_mesh, "fourth.off");
+
+  std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
+  bool decompose_ok = decompose(nef, parts);
+  if (!decompose_ok) {
+    std::cerr << "Decomposition failed." << std::endl;
+  }
 }
 
 int main(int argc, char *argv[]) {
-  {
-    std::cout << "== First attempt: Build nef by unioning all faces == " << std::endl;
-    SurfaceMesh touching_cubes_mesh = createSurfaceMesh(touching_cubes);
-    const auto& mesh = touching_cubes_mesh;
-    CGAL::Nef_nary_union_3<CGAL_Nef_polyhedron3> nary_union;
-    int discarded_facets = 0;
-    for (const auto face : mesh.faces()) {
-      std::vector<CGAL::Point_3<CGAL_Kernel3>> vertices;
-      for (auto vd : CGAL::vertices_around_face(mesh.halfedge(face), mesh)) {
-        vertices.push_back(mesh.point(vd));
-      }    
-  
-      bool is_nef = false;
-      if (vertices.size() >= 1) {
-        CGAL_Nef_polyhedron3 nef(vertices.begin(), vertices.end());
-        if (!nef.is_empty()) {
-          nary_union.add_polyhedron(nef);
-          is_nef = true;
-        }
-      }
-      if (!is_nef) {
-        discarded_facets++;
-      }
-   }
-   if (discarded_facets > 0) {
-     std::cerr << "Discarded " << discarded_facets << " facets." << std::endl;
-   }
-   CGAL_Nef_polyhedron3 nef_union = nary_union.get_union();
-   CGAL::Mark_bounded_volumes<CGAL_Nef_polyhedron3> mbv(true);
-   nef_union.delegate(mbv);
-   writeNef(nef_union, "first.nef3");
-   if (!nef_union.is_valid()) {
-     std::cerr << "Invalid Nef3 polyhedron" << std::endl;
-   }
-
-   std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
-   bool decompose_ok = decompose(nef_union, parts);
-   if (!decompose_ok) {
-     std::cerr << "Decomposition failed." << std::endl;
-     return 1;
-   }
-
-   std::cout << "== First attempt: OK ==\n";
-  }
-  {
-    std::cout << "== Second attempt: Build Nef from two cubes == " << std::endl;
-    SurfaceMesh first_cube_mesh = createSurfaceMesh(first_cube);
-    SurfaceMesh second_cube_mesh = createSurfaceMesh(second_cube);
-    writeMesh(first_cube_mesh, "first_cube.off");
-    writeMesh(second_cube_mesh, "second_cube.off");
-    CGAL_Nef_polyhedron3 first_cube_nef(first_cube_mesh);
-    CGAL_Nef_polyhedron3 second_cube_nef(second_cube_mesh);
-
-    CGAL_Nef_polyhedron3 sum_nef;
-    sum_nef += first_cube_nef;
-    sum_nef += second_cube_nef;
-    writeNef(sum_nef, "second.nef3");
-    if (!sum_nef.is_valid()) {
-      std::cerr << "Invalid Nef3 polyhedron" << std::endl;
-    }
-
-    std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
-    bool decompose_ok = decompose(sum_nef, parts);
-    if (!decompose_ok) {
-      std::cerr << "Decomposition failed." << std::endl;
-      return 1;
-    }
-    std::cout << "== Second attempt: OK == " << std::endl;
-  }
-  {
-    std::cout << "== Third attempt: Build Nef from a mesh with two cubes (distinct vertices) == " << std::endl;
-    SurfaceMesh touching_cubes_mesh = createSurfaceMesh(touching_cubes);
-    writeMesh(touching_cubes_mesh, "touching_cubes_mesh.off");
-    CGAL_Nef_polyhedron3 touching_cubes_nef(touching_cubes_mesh);
-    writeNef(touching_cubes_nef, "third.nef3");
-    if (!touching_cubes_nef.is_valid()) {
-      std::cerr << "Invalid Nef3 polyhedron" << std::endl;
-    }
-
-    std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
-    bool decompose_ok = decompose(touching_cubes_nef, parts);
-    if (!decompose_ok) {
-      std::cerr << "Decomposition failed." << std::endl;
-      return 1;
-    }
-    std::cout << "== Third attempt: OK == " << std::endl;
-  }
-  {
-    std::cout << "== Fourth attempt: Build Nef from a mesh with two cubes (merged vertices) == " << std::endl;
-    SurfaceMesh touching_cubes_mesh = createSurfaceMesh(touching_cubes_14);
-    writeMesh(touching_cubes_mesh, "touching_cubes_mesh.off");
-    CGAL_Nef_polyhedron3 touching_cubes_nef(touching_cubes_mesh);
-    writeNef(touching_cubes_nef, "third.nef3");
-    if (!touching_cubes_nef.is_valid()) {
-      std::cerr << "Invalid Nef3 polyhedron" << std::endl;
-    }
-
-    std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
-    bool decompose_ok = decompose(touching_cubes_nef, parts);
-    if (!decompose_ok) {
-      std::cerr << "Decomposition failed." << std::endl;
-      return 1;
-    }
-    std::cout << "== Fourth attempt: OK == " << std::endl;
-  }
+  processUnionAllFaces();
+  processUnionTwoNefCubes();
+  processMeshWithTwoCubesDistinctVertices();
+  processMeshWithTwoCubesMergedVertices();
+  return 0;
 }
