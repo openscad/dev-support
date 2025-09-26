@@ -23,56 +23,60 @@ Try to convert to a Nef Polyhedron.
 void processUnionAllFaces() {
   auto nef = convertUnionAllFaces();
 
+  if (!nef.is_valid()) {
+    std::cerr << "Nef is not valid!" << std::endl;
+    return;
+  }
+
   SurfaceMesh out_mesh;
   convertNefToSurfaceMesh(nef, out_mesh);
   writeMesh(out_mesh, "first.off");
 
-  std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
-  bool decompose_ok = decompose(nef, parts);
-  if (!decompose_ok) {
-    std::cerr << "Decomposition failed." << std::endl;
-  }
+  auto parts = decompose(nef);
 }
 void processUnionTwoNefCubes() {
   auto nef = convertUnionTwoNefCubes();
+
+  if (!nef.is_valid()) {
+    std::cerr << "Nef is not valid!" << std::endl;
+    return;
+  }
 
   SurfaceMesh out_mesh;
   convertNefToSurfaceMesh(nef, out_mesh);
   writeMesh(out_mesh, "second.off");
 
-  std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
-  bool decompose_ok = decompose(nef, parts);
-  if (!decompose_ok) {
-    std::cerr << "Decomposition failed." << std::endl;
-  }
+  auto parts = decompose(nef);
 }
 
 void processMeshWithTwoCubesDistinctVertices() {
   auto nef = convertMeshWithTwoCubesDistinctVertices();
 
+  if (!nef.is_valid()) {
+    std::cerr << "Nef is not valid!" << std::endl;
+    return;
+  }
+
   SurfaceMesh out_mesh;
   convertNefToSurfaceMesh(nef, out_mesh);
   writeMesh(out_mesh, "third.off");
 
-  std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
-  bool decompose_ok = decompose(nef, parts);
-  if (!decompose_ok) {
-    std::cerr << "Decomposition failed." << std::endl;
-  }
+  auto parts = decompose(nef);
 }
 
 void processMeshWithTwoCubesMergedVertices() {
   auto nef = convertMeshWithTwoCubesMergedVertices();
 
+  if (!nef.is_valid()) {
+    std::cerr << "Nef is not valid!" << std::endl;
+    return;
+  }
+
   SurfaceMesh out_mesh;
   convertNefToSurfaceMesh(nef, out_mesh);
   writeMesh(out_mesh, "fourth.off");
 
-  std::vector<std::vector<CGAL::Point_3<Double_Kernel>>> parts;
-  bool decompose_ok = decompose(nef, parts);
-  if (!decompose_ok) {
-    std::cerr << "Decomposition failed." << std::endl;
-  }
+  auto parts = decompose(nef);
 }
 
 int main(int argc, char *argv[]) {
