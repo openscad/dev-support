@@ -20,6 +20,9 @@ target_link_libraries(convert_to_nef PRIVATE CGAL::CGAL)
 add_executable(decompose_to_points decompose_to_points.cpp)
 target_link_libraries(decompose_to_points PRIVATE CGAL::CGAL)
 
+add_executable(decompose_to_off decompose_to_off.cpp)
+target_link_libraries(decompose_to_off PRIVATE CGAL::CGAL)
+
 add_executable(construct_nef3 construct_nef3.cpp)
 target_link_libraries(construct_nef3 PRIVATE CGAL::CGAL)
 

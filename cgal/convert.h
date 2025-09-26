@@ -71,10 +71,11 @@ CGAL_Nef_polyhedron3 convertMeshWithTwoCubesDistinctVertices() {
             << std::endl;
   SurfaceMesh touching_cubes_mesh = createSurfaceMesh(touching_cubes);
   writeMesh(touching_cubes_mesh, "third_touching_cubes.off");
-  CGAL_Nef_polyhedron3 touching_cubes_nef(touching_cubes_mesh);
-  writeNef(touching_cubes_nef, "third.nef3");
-  printStats(touching_cubes_nef, "third");
-  return touching_cubes_nef;
+
+  auto nef = convertSurfaceMeshToNef(touching_cubes_mesh);
+  writeNef(nef, "fourth.nef3");
+  printStats(nef, "fourth");
+  return nef;
 }
 
 CGAL_Nef_polyhedron3 convertMeshWithTwoCubesMergedVertices() {
